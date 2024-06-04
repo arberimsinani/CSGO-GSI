@@ -12,5 +12,6 @@ class Map:
 
 class Team:
     score = 0
+    name = ''
     timeouts_remaining = 0
     matches_won_this_series = 0

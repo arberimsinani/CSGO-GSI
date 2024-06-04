@@ -1,16 +1,26 @@
+import json
+
+def dump_payload(payload):
+    json_string = json.dumps(payload, indent=4)
+    file_path = "output.json"
+    with open(file_path, "w") as json_file:
+        json_file.write(json_string)
+
 class PayloadParser:
     def parse_payload(self, payload, gamestate_manager):
+        dump_payload(payload)
         change_flags = {}
         # Parse round information
         if 'round' in payload and 'phase' in payload['round']:
             roundchanged = False
             if payload['round']['phase'] != gamestate_manager.gamestate.round_phase:
                 gamestate_manager.gamestate.update_round_phase(payload['round']['phase'])
-                roundchanged = True
         
-        if 'round' in payload and 'bomb' in payload['round']:
-            if payload['round']['bomb'] != gamestate_manager.gamestate.bomb_state:
-                gamestate_manager.gamestate.update_bomb_state(payload['round']['bomb'])
+        if 'bomb' in payload:
+            state = payload['bomb']['state']
+            # if state  == 'planted' or state == 'defused' or state == 'exploded':
+            if state != gamestate_manager.gamestate.bomb.state:
+                gamestate_manager.gamestate.update_bomb_state(state)
 
         # Parse map information
         if 'map' in payload:
@@ -26,7 +36,11 @@ class PayloadParser:
                 
             if 'team_ct' in map_info:
                 ct_info = map_info['team_ct']
+                if 'name' in ct_info:
+                    gamestate_manager.gamestate.map.team_ct.name = ct_info['name']
                 if 'score' in ct_info:
+                    if ct_info['score'] != gamestate_manager.gamestate.map.team_ct.score:
+                        gamestate_manager.gamestate.update_round_win('ct_side',ct_info['name'])
                     gamestate_manager.gamestate.map.team_ct.score = ct_info['score']
                 if 'timeouts_remaining' in ct_info:
                     gamestate_manager.gamestate.map.team_ct.timeouts_remaining = ct_info['timeouts_remaining']
@@ -35,7 +49,11 @@ class PayloadParser:
 
             if 'team_t' in map_info:
                 t_info = map_info['team_t']
+                if 'name' in ct_info:
+                    gamestate_manager.gamestate.map.team_t.name = t_info['name']
                 if 'score' in t_info:
+                    if t_info['score'] != gamestate_manager.gamestate.map.team_t.score:
+                        gamestate_manager.gamestate.update_round_win('t_side',t_info['name'])
                     gamestate_manager.gamestate.map.team_t.score = t_info['score']
                 if 'timeouts_remaining' in t_info:
                     gamestate_manager.gamestate.map.team_t.timeouts_remaining = t_info['timeouts_remaining']

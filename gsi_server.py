@@ -5,12 +5,15 @@ import logger
 import payloadparser
 import gamestate
 import provider
+import argparse
 
 class GSIServer(HTTPServer):
-    def __init__(self, server_address, token, RequestHandler):
+    def __init__(self, server_address, token, RequestHandler, left_team, right_team):
         self.provider = provider.Provider()
         self.auth_token = token
         self.gamestatemanager = gamestate.GameStateManager()
+        self.gamestatemanager.gamestate.left_team = left_team
+        self.gamestatemanager.gamestate.right_team = right_team
 
         super(GSIServer, self).__init__(server_address, RequestHandler)
 
@@ -39,7 +42,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def authenticate_payload(self, payload):
         if 'auth' in payload and 'token' in payload['auth']:
-            return payload['auth']['token'] == server.auth_token
+            return payload['auth']['token'] == self.server.auth_token
         else:
             return False
 
@@ -73,14 +76,35 @@ class RequestHandler(BaseHTTPRequestHandler):
         return
 
 
-server = GSIServer(('localhost', 3000), 'MYTOKENHERE', RequestHandler)
+def main():
+    # Create ArgumentParser object
+    parser = argparse.ArgumentParser(description="Process left and right strings.")
 
-print(time.asctime(), '-', 'CS:GO GSI server starting')
+    # Add arguments
+    parser.add_argument("--left", type=str, help="Left string")
+    parser.add_argument("--right", type=str, help="Right string")
 
-try:
-    server.serve_forever()
-except (KeyboardInterrupt, SystemExit):
-    pass
+    # Parse arguments
+    args = parser.parse_args()
 
-server.server_close()
-print(time.asctime(), '-', 'CS:GO GSI server stopped')
+    # Check if both left and right strings are provided
+    if args.left is None or args.right is None:
+        parser.error("Both --left and --right arguments are required.")
+
+    # Print the provided strings
+    print("Left string:", args.left)
+    print("Right string:", args.right)
+    server = GSIServer(('localhost', 3000), 'MYTOKENHERE', RequestHandler,args.left,args.right)
+
+    print(time.asctime(), '-', 'CS:GO GSI server starting')
+
+    try:
+        server.serve_forever()
+    except (KeyboardInterrupt, SystemExit):
+        pass
+
+    server.server_close()
+    print(time.asctime(), '-', 'CS:GO GSI server stopped')
+
+if __name__ == "__main__":
+    main()
